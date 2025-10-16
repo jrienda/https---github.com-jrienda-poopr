@@ -25,6 +25,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* Ensure Sora applies to all text elements */
+body, h1, h2, h3, h4, h5, h6, p, a, span, button, input, textarea, label, div {
+  font-family: inherit;
+}
 
 /* Dynamic 4‑point animated gradient background */
 body::before {
@@ -268,6 +272,23 @@ body::after {
   outline: 2px solid var(--accent);
   background: #fff8f3;
 }
+
+/* 5-option Bristol simplified grid */
+.chart5 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 72px;
+  gap: 8px;
+}
+.chart5 button {
+  border: 1px solid var(--ring);
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px 10px;
+  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+}
+.chip-label { font-weight: 700; }
 
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .actions button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--ring); cursor: pointer; }

@@ -72,6 +72,8 @@ function MonthCalendar({
   onNext,
   onDayClick,
   streakKeys,
+  canGoNext,
+  canGoPrev,
 }: {
   entries: PoopEntry[];
   year: number;
@@ -80,6 +82,8 @@ function MonthCalendar({
   onNext: () => void;
   onDayClick?: (d: Date) => void;
   streakKeys?: Set<string>;
+  canGoNext: boolean;
+  canGoPrev: boolean;
 }) {
 
   const days = useMemo(() => {
@@ -115,11 +119,11 @@ function MonthCalendar({
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-        <button aria-label="Previous month" onClick={onPrev} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>
+        <button aria-label="Previous month" onClick={() => { if (canGoPrev) onPrev(); }} disabled={!canGoPrev} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: canGoPrev ? "pointer" : "not-allowed", opacity: canGoPrev ? 1 : 0.5 }}>
           ←
         </button>
         <div style={{ fontWeight: 700 }}>{monthName}</div>
-        <button aria-label="Next month" onClick={onNext} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>
+        <button aria-label="Next month" onClick={() => { if (canGoNext) onNext(); }} disabled={!canGoNext} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: canGoNext ? "pointer" : "not-allowed", opacity: canGoNext ? 1 : 0.5 }}>
           →
         </button>
       </div>
@@ -133,14 +137,16 @@ function MonthCalendar({
           const isCurrentMonth = d.getMonth() === month;
           const has = entryKeys.has(toKey(d));
           const k = toKey(d);
+          const isFuture = +startOfDay(d) > +startOfDay(new Date());
           const inStreak = streakKeys?.has(k);
           return (
             <button
               key={d.toISOString() || Math.random()}
               className={`day${has ? " pooped" : ""}${inStreak ? " streak" : ""}`}
               aria-label={d.toDateString()}
-              style={{ opacity: isCurrentMonth ? 1 : 0.4, background: "#fff", border: "1px dashed var(--ring)", borderRadius: 10, cursor: "pointer" }}
-              onClick={() => onDayClick?.(d)}
+              disabled={isFuture}
+              style={{ opacity: isFuture ? 0.25 : (isCurrentMonth ? 1 : 0.4), background: "#fff", border: "1px dashed var(--ring)", borderRadius: 10, cursor: isFuture ? "default" : "pointer" }}
+              onClick={() => { if (!isFuture) onDayClick?.(d); }}
             >
               <div className="day-date">{formatDateNum(d)}</div>
               {has ? <div className="poop-dot" title="Pooped" /> : null}
@@ -154,7 +160,7 @@ function MonthCalendar({
 
 type Draft = {
   whenIso: string;
-  bristolType: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  bristolType: 1 | 2 | 3 | 4 | 5 | 6 | 7; // keeping for storage compatibility; we'll map 5-option to these
   hadBlood: boolean;
 };
 
@@ -227,39 +233,34 @@ function PoopForm({
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
         <div className="stack">
-          <span className="muted">Bristol stool chart</span>
-          <div className="chart">
-            {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
-              <button
-                key={n}
-                aria-pressed={bristolType === n}
-                onClick={() => setBristolType(n)}
-                title={`Type ${n}`}
-                style={{ gridColumn: n <= 4 ? n : n - 3, gridRow: n <= 4 ? 1 : 2 }}
-              >
-                <img
-                  src={`/bristol/type${n}.svg`}
-                  alt={`Bristol type ${n}`}
-                  style={{ width: "100%", height: 48, objectFit: "contain" }}
-                />
-                <div style={{ fontWeight: 600, marginTop: 4, fontSize: 14 }}>Type {n}</div>
-                <div className="muted" style={{ fontSize: 10 }}>
-                  {n === 1
-                    ? "Hard, separate lumps"
-                    : n === 2
-                    ? "Lumpy, sausage-shaped"
-                    : n === 3
-                    ? "Sausage with cracks"
-                    : n === 4
-                    ? "Smooth, soft (ideal)"
-                    : n === 5
-                    ? "Soft blobs, pass easily"
-                    : n === 6
-                    ? "Mushy, fluffy pieces"
-                    : "Watery, no solid pieces"}
-                </div>
-              </button>
-            ))}
+          <span className="muted">Consistency</span>
+          <div className="chart5">
+            {[
+              { key: "liquid", label: "Liquid", color: "#c28b5a", mapTo: 7 },
+              { key: "mushy", label: "Mushy", color: "#a66e46", mapTo: 6 },
+              { key: "soft", label: "Soft", color: "#8e5c3a", mapTo: 5 },
+              { key: "normal", label: "Normal", color: "#6f4a2d", mapTo: 4 },
+              { key: "hard", label: "Hard", color: "#4b2f1c", mapTo: 2 },
+              { key: "lumps", label: "Separated lumps", color: "#3a2315", mapTo: 1 },
+            ].map((opt, idx) => {
+              const selected = bristolType === (opt.mapTo as any);
+              return (
+                <button
+                  key={opt.key}
+                  aria-pressed={selected}
+                  onClick={() => setBristolType(opt.mapTo as any)}
+                  style={{
+                    background: selected ? opt.color : "#fff",
+                    color: selected ? "#fff" : "inherit",
+                    border: `3px solid ${opt.color}`,
+                    gridColumn: (idx % 3) + 1,
+                    gridRow: Math.floor(idx / 3) + 1,
+                  }}
+                >
+                  <span className="chip-label">{opt.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
         <label className="blood-toggle">
@@ -378,6 +379,20 @@ export default function Page() {
     return { currentStreak: current, longestStreak: longest, currentStreakKeys: currentKeys };
   }, [entries]);
 
+  const daysSinceLast = useMemo(() => {
+    if (entries.length === 0) return null;
+    let latest: Date | null = null;
+    for (const e of entries) {
+      const d = new Date(e.timestampIso);
+      if (!isNaN(d.getTime()) && (!latest || d > latest)) latest = d;
+    }
+    if (!latest) return null;
+    const today = startOfDay(new Date());
+    const lastDay = startOfDay(latest);
+    const diff = Math.floor((+today - +lastDay) / (24 * 3600 * 1000));
+    return diff; // 0=today, 1=yesterday
+  }, [entries]);
+
   function DayEntriesModal({ date, entries, onClose, onRequestDelete, onRequestEdit }: {
     date: Date;
     entries: PoopEntry[];
@@ -477,18 +492,28 @@ export default function Page() {
           }}
           onDayClick={(d) => setDayModal(d)}
           streakKeys={currentStreakKeys}
+        canGoNext={new Date(viewYear, viewMonth, 1) < new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
+          canGoPrev={(function(){
+            if (entries.length === 0) return false;
+            let earliest: Date | null = null;
+            for (const e of entries) {
+              const d = new Date(e.timestampIso);
+              if (!isNaN(d.getTime()) && (!earliest || d < earliest)) earliest = d;
+            }
+            if (!earliest) return false;
+            const earliestMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+            return new Date(viewYear, viewMonth, 1) > earliestMonth;
+          })()}
         />
 
-        <div className="stats">
-          <div className="stat-card">
-            <div className="stat-title">This Streak</div>
-            <div className="stat-value">{currentStreak} {currentStreak === 1 ? "day" : "days"}</div>
+        {daysSinceLast !== null && daysSinceLast !== 1 ? (
+          <div className="stats" style={{ gridTemplateColumns: "1fr" }}>
+            <div className="stat-card">
+              <div className="stat-title">Days since last poop</div>
+              <div className="stat-value">{daysSinceLast} {daysSinceLast === 1 ? "day" : "days"}</div>
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-title">Longest Streak</div>
-            <div className="stat-value">{longestStreak} {longestStreak === 1 ? "day" : "days"}</div>
-          </div>
-        </div>
+        ) : null}
 
         <div className="footer">
           <button className="poop-button" onClick={() => setShowForm(true)}>
