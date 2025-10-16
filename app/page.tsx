@@ -7,6 +7,7 @@ type PoopEntry = {
   timestampIso: string; // ISO string
   bristolType: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   hadBlood: boolean;
+  loadSize?: "little" | "normal" | "big";
 };
 
 const STORAGE_KEY = "poopr.entries.v1";
@@ -178,6 +179,7 @@ type Draft = {
   whenIso: string;
   bristolType: 1 | 2 | 3 | 4 | 5 | 6 | 7; // keeping for storage compatibility; we'll map 5-option to these
   hadBlood: boolean;
+  loadSize?: "little" | "normal" | "big";
 };
 
 function PoopForm({
@@ -192,6 +194,7 @@ function PoopForm({
   const [whenIso, setWhenIso] = useState(initial.whenIso);
   const [bristolType, setBristolType] = useState(initial.bristolType);
   const [hadBlood, setHadBlood] = useState(initial.hadBlood);
+  const [loadSize, setLoadSize] = useState<"little" | "normal" | "big">(initial.loadSize ?? "normal");
 
   const localDateTime = useMemo(() => {
     const dt = new Date(whenIso);
@@ -249,7 +252,7 @@ function PoopForm({
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
         <div className="stack">
-          <span className="muted">Consistency</span>
+          <span className="muted">How was it?</span>
           <div className="chart5">
             {[
               { key: "liquid", label: "Liquid", color: "#c28b5a", mapTo: 7 },
@@ -279,18 +282,57 @@ function PoopForm({
             })}
           </div>
         </div>
-        <label className="blood-toggle">
-          <input
-            type="checkbox"
-            checked={hadBlood}
-            onChange={(e) => setHadBlood(e.target.checked)}
-          />
-          <BloodIcon />
-          <span>Blood present</span>
-        </label>
+        <div className="stack">
+          <span className="muted">Any problems?</span>
+          <div className="chart5" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+            {[{ key: "ok", label: "ALL RIGHT", color: "#555", val: false }, { key: "blood", label: "BLOOD", color: "#c1121f", val: true }].map((opt, idx) => {
+              const selected = hadBlood === opt.val;
+              return (
+                <button
+                  key={opt.key}
+                  aria-pressed={selected}
+                  onClick={() => setHadBlood(opt.val)}
+                  style={{
+                    background: selected ? opt.color : "#fff",
+                    color: selected ? "#fff" : "inherit",
+                    border: `3px solid ${opt.color}`,
+                    gridColumn: (idx % 2) + 1,
+                    gridRow: Math.floor(idx / 2) + 1,
+                  }}
+                >
+                  <span className="chip-label">{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="stack">
+          <span className="muted">Was it big?</span>
+          <div className="chart5" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            {[{ key: "little", label: "LITTLE" as const }, { key: "normal", label: "NORMAL" as const }, { key: "big", label: "BIG ONE" as const }].map((opt, idx) => {
+              const selected = loadSize === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  aria-pressed={selected}
+                  onClick={() => setLoadSize(opt.key)}
+                  style={{
+                    background: selected ? "#3a3a3a" : "#fff",
+                    color: selected ? "#fff" : "inherit",
+                    border: `3px solid #7a7a7a`,
+                    gridColumn: (idx % 3) + 1,
+                    gridRow: Math.floor(idx / 3) + 1,
+                  }}
+                >
+                  <span className="chip-label">{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="sheet-actions actions">
           <button onClick={onCancel}>Cancel</button>
-          <button className="primary" onClick={() => onSave({ whenIso, bristolType, hadBlood })}>Confirm</button>
+          <button className="primary" onClick={() => onSave({ whenIso, bristolType, hadBlood, loadSize })}>Confirm</button>
         </div>
       </div>
     </div>
@@ -523,35 +565,43 @@ export default function Page() {
           <h2 className="title" style={{ margin: 0 }}>{userName ? `Hey ${userName} — ${header}` : header}</h2>
         </header>
 
-        <MonthCalendar
-          entries={entries}
-          year={viewYear}
-          month={viewMonth}
-          onPrev={() => {
-            const d = new Date(viewYear, viewMonth - 1, 1);
-            setViewYear(d.getFullYear());
-            setViewMonth(d.getMonth());
-          }}
-          onNext={() => {
-            const d = new Date(viewYear, viewMonth + 1, 1);
-            setViewYear(d.getFullYear());
-            setViewMonth(d.getMonth());
-          }}
-          onDayClick={(d) => setDayModal(d)}
-          streakKeys={currentStreakKeys}
-        canGoNext={new Date(viewYear, viewMonth, 1) < new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
-          canGoPrev={(function(){
-            if (entries.length === 0) return false;
-            let earliest: Date | null = null;
-            for (const e of entries) {
-              const d = new Date(e.timestampIso);
-              if (!isNaN(d.getTime()) && (!earliest || d < earliest)) earliest = d;
-            }
-            if (!earliest) return false;
-            const earliestMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
-            return new Date(viewYear, viewMonth, 1) > earliestMonth;
-          })()}
-        />
+        <div style={{ position: "relative" }}>
+          <MonthCalendar
+            entries={entries}
+            year={viewYear}
+            month={viewMonth}
+            onPrev={() => {
+              const d = new Date(viewYear, viewMonth - 1, 1);
+              setViewYear(d.getFullYear());
+              setViewMonth(d.getMonth());
+            }}
+            onNext={() => {
+              const d = new Date(viewYear, viewMonth + 1, 1);
+              setViewYear(d.getFullYear());
+              setViewMonth(d.getMonth());
+            }}
+            onDayClick={(d) => setDayModal(d)}
+            streakKeys={currentStreakKeys}
+            canGoNext={new Date(viewYear, viewMonth, 1) < new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
+            canGoPrev={(function(){
+              if (entries.length === 0) return false;
+              let earliest: Date | null = null;
+              for (const e of entries) {
+                const d = new Date(e.timestampIso);
+                if (!isNaN(d.getTime()) && (!earliest || d < earliest)) earliest = d;
+              }
+              if (!earliest) return false;
+              const earliestMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+              return new Date(viewYear, viewMonth, 1) > earliestMonth;
+            })()}
+          />
+          {entries.length === 0 ? (
+            <div className="card" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", background: "rgba(255,255,255,0.95)", zIndex: 2 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 0.5 }}>NO POOPS YET</div>
+              <div className="muted" style={{ marginTop: 6 }}>(Don't be shy)</div>
+            </div>
+          ) : null}
+        </div>
 
         {daysSinceLast !== null && daysSinceLast > 1 ? (
           <div className="stats" style={{ gridTemplateColumns: "1fr" }}>
