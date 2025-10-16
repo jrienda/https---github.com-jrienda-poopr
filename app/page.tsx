@@ -248,7 +248,7 @@ function PoopForm({
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 3000 }}>
-      <div className="modal stack" style={{ gap: 12, margin: "auto" }}>
+      <div className="modal stack" style={{ gap: 12, margin: "auto", maxWidth: "320px" }}>
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
         <div className="stack">
@@ -308,23 +308,42 @@ function PoopForm({
         </div>
         <div className="stack">
           <span className="muted">Was it big?</span>
-          <div className="chart5" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-            {[{ key: "little" as const, label: "LITTLE" as const }, { key: "normal" as const, label: "NORMAL" as const }, { key: "big" as const, label: "BIG ONE" as const }].map((opt, idx) => {
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            {[
+              { key: "little" as const, label: "Little" },
+              { key: "normal" as const, label: "Normal" },
+              { key: "big" as const, label: "Big" }
+            ].map((opt, idx) => {
               const selected = loadSize === opt.key;
+              const isSelectable = idx === 0 || (idx === 1 && loadSize !== "little") || (idx === 2 && loadSize === "big");
+              const color = selected ? "#6f4a2d" : "#ccc";
+              
               return (
                 <button
                   key={opt.key}
-                  aria-pressed={selected}
-                  onClick={() => setLoadSize(opt.key)}
-                  style={{
-                    background: selected ? "#3a3a3a" : "#fff",
-                    color: selected ? "#fff" : "inherit",
-                    border: `3px solid #7a7a7a`,
-                    gridColumn: (idx % 3) + 1,
-                    gridRow: Math.floor(idx / 3) + 1,
+                  onClick={() => {
+                    // Allow selection from left to right only
+                    if (idx === 0 || (idx === 1 && loadSize !== "little") || (idx === 2 && loadSize === "big")) {
+                      setLoadSize(opt.key);
+                    }
                   }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: isSelectable ? "pointer" : "default",
+                    opacity: isSelectable ? 1 : 0.5,
+                    padding: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}
+                  title={opt.label}
                 >
-                  <span className="chip-label">{opt.label}</span>
+                  <svg width="32" height="32" viewBox="0 0 512 512" fill={color}>
+                    <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                  </svg>
+                  <span style={{ fontSize: "10px", color: selected ? "#6f4a2d" : "#999" }}>{opt.label}</span>
                 </button>
               );
             })}
@@ -485,11 +504,27 @@ export default function Page() {
         .sort((a, b) => +new Date(b.timestampIso) - +new Date(a.timestampIso));
     }, [entries, key]);
 
-    const title = date.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const title = (() => {
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      
+      const dateKey = toKey(date);
+      const todayKey = toKey(today);
+      const yesterdayKey = toKey(yesterday);
+      
+      if (dateKey === todayKey) {
+        return "TODAY";
+      } else if (dateKey === yesterdayKey) {
+        return "YESTERDAY";
+      } else {
+        return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      }
+    })();
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 2500 }}>
-        <div className="modal stack" style={{ gap: 12 }}>
+        <div className="modal stack" style={{ gap: 12, maxWidth: "320px", margin: "auto" }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
             <div className="row" style={{ gap: 8 }}>
@@ -592,7 +627,11 @@ export default function Page() {
                       <button onClick={() => {
                         setConfirmingDelete(null);
                         onRequestEdit(e);
-                      }} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Edit</button>
+                      }} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Edit">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                        </svg>
+                      </button>
                       <button 
                         onClick={() => {
                           if (confirmingDelete === e.id) {
@@ -751,12 +790,6 @@ export default function Page() {
           </button>
         </div>
 
-        <div className="bottom-nav">
-          <div className="btn">Home</div>
-          <div className="btn">Profile</div>
-          <div className="btn">Progress</div>
-          <div className="btn">Settings</div>
-        </div>
       </div>
       )}
       {showForm ? (
