@@ -541,8 +541,8 @@ export default function Page() {
                           const loadSize = e.loadSize || "normal";
                           
                           // Handle legacy entries that might have different loadSize values
-                          const normalizedLoadSize = loadSize === "little" || loadSize === "LITTLE" ? "little" :
-                                                   loadSize === "big" || loadSize === "BIG ONE" ? "big" : "normal";
+                          const normalizedLoadSize = loadSize === "little" ? "little" :
+                                                   loadSize === "big" ? "big" : "normal";
                           
                           if (normalizedLoadSize === "little") {
                             return (
