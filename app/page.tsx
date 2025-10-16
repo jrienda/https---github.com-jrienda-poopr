@@ -67,8 +67,8 @@ function formatDateNum(d: Date) {
 
 function PoopIcon({ size = 24 }: { size?: number }) {
   return (
-    <svg className="icon poop" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2c1.6 2 .5 3.5-1 4.5 2 .3 3.5 1.5 3.5 3.5 0 .7-.2 1.3-.6 1.9h.1c3.3 0 6 2.7 6 6 0 1.7-1.3 3-3 3H7c-2 0-3.5-1.4-3.5-3.5 0-2.9 2.3-5.2 5.2-5.2-.4-.5-.7-1.2-.7-1.9 0-1.8 1.2-3 2.7-3.5C10 5 9.5 3.5 12 2z" />
+    <svg className="icon poop" width={size} height={size} viewBox="0 0 512 512" fill="currentColor">
+      <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
     </svg>
   );
 }
@@ -247,7 +247,7 @@ function PoopForm({
   const minutes = Array.from({ length: 60 }, (_, i) => i).filter((m) => m % 5 === 0);
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 1100 }}>
+    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 3000 }}>
       <div className="modal stack" style={{ gap: 12 }}>
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
@@ -476,13 +476,13 @@ export default function Page() {
     const title = date.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 1500 }}>
+    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 2500 }}>
         <div className="modal stack" style={{ gap: 12 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
             <div className="row" style={{ gap: 8 }}>
-              <button onClick={() => onAddForDay(date)} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Add to this day</button>
-              <button onClick={onClose}>Close</button>
+              <button onClick={() => onAddForDay(date)} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#333", padding: "8px" }}>+</button>
+              <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#666", padding: "8px" }}>×</button>
             </div>
           </div>
           {list.length === 0 ? (
@@ -494,11 +494,53 @@ export default function Page() {
                 return (
                   <div key={e.id} className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                     <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <PoopIcon size={18} />
                       <div>{formatTime(dt)}</div>
                     </div>
                     <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <span>Type {e.bristolType}</span>
+                      <div style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+                        {(function() {
+                          const colors = {
+                            1: "#3a2315", // Separated lumps - darkest brown
+                            2: "#4b2f1c", // Hard - dark brown
+                            3: "#6f4a2d", // Normal - medium brown
+                            4: "#6f4a2d", // Normal - medium brown
+                            5: "#8e5c3a", // Soft - light brown
+                            6: "#a66e46", // Mushy - lighter brown
+                            7: "#c28b5a"  // Liquid - lightest brown
+                          };
+                          const color = colors[e.bristolType as keyof typeof colors] || "#6f4a2d";
+                          const loadSize = e.loadSize || "normal";
+                          
+                          // Handle legacy entries that might have different loadSize values
+                          const normalizedLoadSize = loadSize === "little" || loadSize === "LITTLE" ? "little" :
+                                                   loadSize === "big" || loadSize === "BIG ONE" ? "big" : "normal";
+                          
+                          if (normalizedLoadSize === "little") {
+                            return (
+                              <svg width={9} height={18} viewBox="0 0 512 512" fill={color} style={{ clipPath: "inset(0 50% 0 0)" }}>
+                                <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                              </svg>
+                            );
+                          } else if (normalizedLoadSize === "big") {
+                            return (
+                              <>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                              </>
+                            );
+                          } else {
+                            return (
+                              <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                              </svg>
+                            );
+                          }
+                        })()}
+                      </div>
                       {e.hadBlood ? (
                         <span title="Blood present"><BloodIcon /></span>
                       ) : null}

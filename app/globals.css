@@ -145,7 +145,7 @@ body::after {
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  border: 1px dashed var(--ring);
+  border: none;
   background: #fff;
 }
 
@@ -158,14 +158,14 @@ body::after {
 
 .day.pooped {
   background: var(--poop);
-  border-color: var(--poop);
+  border: 1px solid var(--poop);
   color: #fff;
 }
 .day.pooped .day-date { color: #fff; }
 
 .day.streak {
   background: var(--poop);
-  border-color: var(--poop);
+  border: 1px solid var(--poop);
   color: #fff;
 }
 .day.streak .day-date { color: #fff; }
