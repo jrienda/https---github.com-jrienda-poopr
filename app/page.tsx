@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 type PoopEntry = {
   id: string;
@@ -314,24 +315,29 @@ function PoopForm({
               { key: "normal" as const, label: "Normal" },
               { key: "big" as const, label: "Big" }
             ].map((opt, idx) => {
-              const selected = loadSize === opt.key;
-              const isSelectable = idx === 0 || (idx === 1 && loadSize !== "little") || (idx === 2 && loadSize === "big");
-              const color = selected ? "#6f4a2d" : "#ccc";
+              // Star rating logic: show filled turds up to the selected level
+              const shouldShowFilled = (() => {
+                if (loadSize === "little") return idx === 0;
+                if (loadSize === "normal") return idx <= 1;
+                if (loadSize === "big") return idx <= 2;
+                return false;
+              })();
+              
+              const color = shouldShowFilled ? "#6f4a2d" : "#ccc";
               
               return (
                 <button
                   key={opt.key}
                   onClick={() => {
-                    // Allow selection from left to right only
-                    if (idx === 0 || (idx === 1 && loadSize !== "little") || (idx === 2 && loadSize === "big")) {
-                      setLoadSize(opt.key);
-                    }
+                    // Set the appropriate load size based on which turd was clicked
+                    if (idx === 0) setLoadSize("little");
+                    else if (idx === 1) setLoadSize("normal");
+                    else if (idx === 2) setLoadSize("big");
                   }}
                   style={{
                     background: "transparent",
                     border: "none",
-                    cursor: isSelectable ? "pointer" : "default",
-                    opacity: isSelectable ? 1 : 0.5,
+                    cursor: "pointer",
                     padding: "8px",
                     display: "flex",
                     flexDirection: "column",
@@ -343,7 +349,7 @@ function PoopForm({
                   <svg width="32" height="32" viewBox="0 0 512 512" fill={color}>
                     <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
                   </svg>
-                  <span style={{ fontSize: "10px", color: selected ? "#6f4a2d" : "#999" }}>{opt.label}</span>
+                  <span style={{ fontSize: "10px", color: shouldShowFilled ? "#6f4a2d" : "#999" }}>{opt.label}</span>
                 </button>
               );
             })}
@@ -783,11 +789,33 @@ export default function Page() {
           </div>
         ) : null}
 
-        <div className="footer">
-          <button className="poop-button" onClick={() => setShowForm(true)}>
+        <div className="footer" style={{ display: "flex", gap: "12px", alignItems: "stretch" }}>
+          <button className="poop-button" onClick={() => setShowForm(true)} style={{ flex: "2" }}>
             <PoopIcon />
             <span>I just pooped</span>
           </button>
+          
+          <Link href="/histogram" style={{ textDecoration: "none", flex: "1" }}>
+            <button style={{
+              background: "transparent",
+              border: "2px solid var(--poop)",
+              borderRadius: "12px",
+              padding: "12px",
+              color: "var(--poop)",
+              fontWeight: "600",
+              fontSize: "14px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              transition: "all 0.2s ease"
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" fill="currentColor"/>
+              </svg>
+            </button>
+          </Link>
         </div>
 
       </div>
