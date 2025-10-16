@@ -309,7 +309,7 @@ function PoopForm({
         <div className="stack">
           <span className="muted">Was it big?</span>
           <div className="chart5" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-            {[{ key: "little", label: "LITTLE" as const }, { key: "normal", label: "NORMAL" as const }, { key: "big", label: "BIG ONE" as const }].map((opt, idx) => {
+            {[{ key: "little" as const, label: "LITTLE" as const }, { key: "normal" as const, label: "NORMAL" as const }, { key: "big" as const, label: "BIG ONE" as const }].map((opt, idx) => {
               const selected = loadSize === opt.key;
               return (
                 <button
