@@ -6,4 +6,12 @@
     <rect x="30" y="50" width="20" height="16" rx="8"/>
   </g>
 </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <rect width="80" height="80" rx="12" fill="#fff"/>
+  <g fill="#6b4226">
+    <rect x="25" y="22" width="14" height="16" rx="7"/>
+    <rect x="39" y="34" width="16" height="18" rx="8"/>
+    <rect x="30" y="50" width="20" height="16" rx="8"/>
+  </g>
+</svg>
 

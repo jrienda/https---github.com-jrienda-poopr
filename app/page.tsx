@@ -225,43 +225,7 @@ function PoopForm({
     <div className="modal-backdrop" role="dialog" aria-modal>
       <div className="modal stack" style={{ gap: 12 }}>
         <h3 style={{ margin: 0 }}>Log a poop</h3>
-        <div className="field">
-          <span className="muted">Date & Time</span>
-          <div className="wheel">
-            <div className="wheel-col" onScroll={(e) => {
-              const el = e.currentTarget as HTMLDivElement;
-              const idx = Math.round(el.scrollTop / 36);
-              const bounded = Math.max(0, Math.min(idx, wheelDays.length - 1));
-              onWheelSelect(wheelDays[bounded].date, when.getHours(), when.getMinutes());
-            }}
-            ref={(el) => { if (el) el.scrollTop = 36 * nearestIndex(+startOfDay(when), wheelDays.map(x=>+x.date)); }}>
-              {wheelDays.map((d) => (
-                <div key={d.date.toISOString()} className="wheel-item" aria-selected={toKey(d.date) === toKey(when)}>{d.label}</div>
-              ))}
-            </div>
-            <div className="wheel-col" onScroll={(e) => {
-              const el = e.currentTarget as HTMLDivElement;
-              const idx = Math.round(el.scrollTop / 36);
-              const hour = Math.max(0, Math.min(idx, hours.length - 1));
-              onWheelSelect(startOfDay(when), hours[hour], when.getMinutes());
-            }} ref={(el) => { if (el) el.scrollTop = 36 * nearestIndex(when.getHours(), hours); }}>
-              {hours.map((h) => (
-                <div key={h} className="wheel-item" aria-selected={when.getHours() === h}>{String(h).padStart(2, "0")}</div>
-              ))}
-            </div>
-            <div className="wheel-col" onScroll={(e) => {
-              const el = e.currentTarget as HTMLDivElement;
-              const idx = Math.round(el.scrollTop / 36);
-              const minute = Math.max(0, Math.min(idx, minutes.length - 1));
-              onWheelSelect(startOfDay(when), when.getHours(), minutes[minute]);
-            }} ref={(el) => { if (el) el.scrollTop = 36 * nearestIndex(when.getMinutes(), minutes); }}>
-              {minutes.map((m) => (
-                <div key={m} className="wheel-item" aria-selected={Math.round(when.getMinutes()/5)*5 === m}>{String(m).padStart(2, "0")}</div>
-              ))}
-            </div>
-            <div className="wheel-center" />
-          </div>
-        </div>
+        {/* Date & Time removed per request; entries will use the provided timestamp */}
         <div className="stack">
           <span className="muted">Bristol stool chart</span>
           <div className="chart">
@@ -271,14 +235,15 @@ function PoopForm({
                 aria-pressed={bristolType === n}
                 onClick={() => setBristolType(n)}
                 title={`Type ${n}`}
+                style={{ gridColumn: n <= 4 ? n : n - 3, gridRow: n <= 4 ? 1 : 2 }}
               >
                 <img
                   src={`/bristol/type${n}.svg`}
                   alt={`Bristol type ${n}`}
-                  style={{ width: "100%", height: 64, objectFit: "contain" }}
+                  style={{ width: "100%", height: 48, objectFit: "contain" }}
                 />
-                <div style={{ fontWeight: 600, marginTop: 6 }}>Type {n}</div>
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div style={{ fontWeight: 600, marginTop: 4, fontSize: 14 }}>Type {n}</div>
+                <div className="muted" style={{ fontSize: 10 }}>
                   {n === 1
                     ? "Hard, separate lumps"
                     : n === 2
@@ -306,7 +271,7 @@ function PoopForm({
           <BloodIcon />
           <span>Blood present</span>
         </label>
-        <div className="actions">
+        <div className="sheet-actions actions">
           <button onClick={onCancel}>Cancel</button>
           <button className="primary" onClick={() => onSave({ whenIso, bristolType, hadBlood })}>Confirm</button>
         </div>

@@ -6,4 +6,12 @@
     <path d="M28 40h24" stroke="#6b4226" stroke-width="3" opacity=".4"/>
   </g>
 </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <rect width="80" height="80" rx="12" fill="#fff"/>
+  <g fill="#6b4226">
+    <rect x="28" y="18" width="24" height="44" rx="10"/>
+    <rect x="28" y="18" width="24" height="44" rx="10" fill="#fff" opacity=".15"/>
+    <path d="M28 40h24" stroke="#6b4226" stroke-width="3" opacity=".4"/>
+  </g>
+</svg>
 
