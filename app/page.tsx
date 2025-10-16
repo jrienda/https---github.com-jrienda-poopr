@@ -10,6 +10,7 @@ type PoopEntry = {
 };
 
 const STORAGE_KEY = "poopr.entries.v1";
+const STORAGE_USER = "poopr.user.name.v1";
 
 function readEntries(): PoopEntry[] {
   if (typeof window === "undefined") return [];
@@ -26,6 +27,21 @@ function readEntries(): PoopEntry[] {
 function writeEntries(entries: PoopEntry[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function readUserName(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem(STORAGE_USER);
+    return v && v.trim() ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeUserName(name: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_USER, name);
 }
 
 function startOfDay(d: Date) {
@@ -145,11 +161,11 @@ function MonthCalendar({
               className={`day${has ? " pooped" : ""}${inStreak ? " streak" : ""}`}
               aria-label={d.toDateString()}
               disabled={isFuture}
-              style={{ opacity: isFuture ? 0.25 : (isCurrentMonth ? 1 : 0.4), background: "#fff", border: "1px dashed var(--ring)", borderRadius: 10, cursor: isFuture ? "default" : "pointer" }}
+              style={{ opacity: isFuture ? 0.25 : (isCurrentMonth ? 1 : 0.4), border: "1px dashed var(--ring)", borderRadius: 10, cursor: isFuture ? "default" : "pointer" }}
               onClick={() => { if (!isFuture) onDayClick?.(d); }}
             >
               <div className="day-date">{formatDateNum(d)}</div>
-              {has ? <div className="poop-dot" title="Pooped" /> : null}
+              {/* dot removed; full cell color indicates entry */}
             </button>
           );
         })}
@@ -304,9 +320,12 @@ export default function Page() {
   const [dayModal, setDayModal] = useState<Date | null>(null);
   const [editing, setEditing] = useState<PoopEntry | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PoopEntry | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState<string>("");
 
   useEffect(() => {
     setEntries(readEntries());
+    setUserName(readUserName());
   }, []);
 
   useEffect(() => {
@@ -471,9 +490,37 @@ export default function Page() {
 
   return (
     <main className="container">
+      {userName == null ? (
+        <div className="phone stack" style={{ gap: 12 }}>
+          <div className="card stack" style={{ gap: 12 }}>
+            <h3 style={{ margin: 0 }}>Welcome</h3>
+            <div className="muted">What should we call you?</div>
+            <input
+              className="input"
+              placeholder="Your name"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+            />
+            <div className="actions" style={{ justifyContent: "flex-end", marginTop: 4 }}>
+              <button
+                className="primary"
+                onClick={() => {
+                  const v = nameDraft.trim();
+                  if (!v) return;
+                  writeUserName(v);
+                  setUserName(v);
+                }}
+                disabled={!nameDraft.trim()}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="phone stack" style={{ gap: 12 }}>
         <header className="stack" style={{ gap: 8 }}>
-          <h2 className="title" style={{ margin: 0 }}>{header}</h2>
+          <h2 className="title" style={{ margin: 0 }}>{userName ? `Hey ${userName} — ${header}` : header}</h2>
         </header>
 
         <MonthCalendar
@@ -506,7 +553,7 @@ export default function Page() {
           })()}
         />
 
-        {daysSinceLast !== null && daysSinceLast !== 1 ? (
+        {daysSinceLast !== null && daysSinceLast > 1 ? (
           <div className="stats" style={{ gridTemplateColumns: "1fr" }}>
             <div className="stat-card">
               <div className="stat-title">Days since last poop</div>
@@ -529,7 +576,7 @@ export default function Page() {
           <div className="btn">Settings</div>
         </div>
       </div>
-
+      )}
       {showForm ? (
         <PoopForm
           initial={{ whenIso: nowIso, bristolType: 4, hadBlood: false }}
