@@ -248,7 +248,7 @@ function PoopForm({
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 3000 }}>
-      <div className="modal stack" style={{ gap: 12 }}>
+      <div className="modal stack" style={{ gap: 12, margin: "auto" }}>
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
         <div className="stack">
@@ -361,15 +361,24 @@ export default function Page() {
   const [viewMonth, setViewMonth] = useState<number>(today.getMonth());
   const [dayModal, setDayModal] = useState<Date | null>(null);
   const [editing, setEditing] = useState<PoopEntry | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<PoopEntry | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState<string>("");
   const [prefillWhenIso, setPrefillWhenIso] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
 
   useEffect(() => {
     setEntries(readEntries());
     setUserName(readUserName());
   }, []);
+
+  useEffect(() => {
+    if (showConfirmation) {
+      const timer = setTimeout(() => {
+        setShowConfirmation(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfirmation]);
 
   useEffect(() => {
     writeEntries(entries);
@@ -386,13 +395,15 @@ export default function Page() {
       timestampIso: d.whenIso,
       bristolType: d.bristolType,
       hadBlood: d.hadBlood,
+      loadSize: d.loadSize,
     };
     setEntries((prev) => [e, ...prev].sort((a, b) => +new Date(b.timestampIso) - +new Date(a.timestampIso)));
+    setShowConfirmation(true);
   }
 
   function updateEntry(id: string, d: Draft) {
     setEntries((prev) => prev
-      .map((e) => (e.id === id ? { ...e, timestampIso: d.whenIso, bristolType: d.bristolType, hadBlood: d.hadBlood } : e))
+      .map((e) => (e.id === id ? { ...e, timestampIso: d.whenIso, bristolType: d.bristolType, hadBlood: d.hadBlood, loadSize: d.loadSize } : e))
       .sort((a, b) => +new Date(b.timestampIso) - +new Date(a.timestampIso))
     );
   }
@@ -463,6 +474,7 @@ export default function Page() {
     onRequestEdit: (e: PoopEntry) => void;
     onAddForDay: (d: Date) => void;
   }) {
+    const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
     const key = toKey(date);
     const list = useMemo(() => {
       return entries
@@ -481,8 +493,14 @@ export default function Page() {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
             <div className="row" style={{ gap: 8 }}>
-              <button onClick={() => onAddForDay(date)} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#333", padding: "8px" }}>+</button>
-              <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#666", padding: "8px" }}>×</button>
+              <button onClick={() => {
+                setConfirmingDelete(null);
+                onAddForDay(date);
+              }} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#333", padding: "8px" }}>+</button>
+                <button onClick={() => {
+                  setConfirmingDelete(null);
+                  onClose();
+                }} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "24px", fontWeight: "300", color: "#666", padding: "8px" }}>×</button>
             </div>
           </div>
           {list.length === 0 ? (
@@ -497,7 +515,18 @@ export default function Page() {
                       <div>{formatTime(dt)}</div>
                     </div>
                     <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+                      <div style={{ width: "24px", display: "flex", justifyContent: "center" }}>
+                        {e.hadBlood ? (
+                          <span title="Blood present"><BloodIcon /></span>
+                        ) : null}
+                      </div>
+                      <div style={{ 
+                        display: "flex", 
+                        gap: "2px", 
+                        alignItems: "center",
+                        width: "70px",
+                        justifyContent: "center"
+                      }}>
                         {(function() {
                           const colors = {
                             1: "#3a2315", // Separated lumps - darkest brown
@@ -517,9 +546,17 @@ export default function Page() {
                           
                           if (normalizedLoadSize === "little") {
                             return (
-                              <svg width={9} height={18} viewBox="0 0 512 512" fill={color} style={{ clipPath: "inset(0 50% 0 0)" }}>
-                                <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
-                              </svg>
+                              <>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill="#ccc">
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill="#ccc">
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                              </>
                             );
                           } else if (normalizedLoadSize === "big") {
                             return (
@@ -530,22 +567,52 @@ export default function Page() {
                                 <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
                                   <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
                                 </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
                               </>
                             );
                           } else {
                             return (
-                              <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
-                                <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
-                              </svg>
+                              <>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill={color}>
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                                <svg width={18} height={18} viewBox="0 0 512 512" fill="#ccc">
+                                  <path d="M451.36 369.14C468.66 355.99 480 335.41 480 312c0-39.77-32.24-72-72-72h-14.07c13.42-11.73 22.07-28.78 22.07-48 0-35.35-28.65-64-64-64h-5.88c3.57-10.05 5.88-20.72 5.88-32 0-53.02-42.98-96-96-96-5.17 0-10.15.74-15.11 1.52C250.31 14.64 256 30.62 256 48c0 44.18-35.82 80-80 80h-16c-35.35 0-64 28.65-64 64 0 19.22 8.65 36.27 22.07 48H104c-39.76 0-72 32.23-72 72 0 23.41 11.34 43.99 28.64 57.14C26.31 374.62 0 404.12 0 440c0 39.76 32.24 72 72 72h368c39.76 0 72-32.24 72-72 0-35.88-26.31-65.38-60.64-70.86z"/>
+                                </svg>
+                              </>
                             );
                           }
                         })()}
                       </div>
-                      {e.hadBlood ? (
-                        <span title="Blood present"><BloodIcon /></span>
-                      ) : null}
-                      <button onClick={() => onRequestEdit(e)} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Edit</button>
-                      <button onClick={() => onRequestDelete(e)} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Delete</button>
+                      <button onClick={() => {
+                        setConfirmingDelete(null);
+                        onRequestEdit(e);
+                      }} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Edit</button>
+                      <button 
+                        onClick={() => {
+                          if (confirmingDelete === e.id) {
+                            onRequestDelete(e);
+                            setConfirmingDelete(null);
+                          } else {
+                            setConfirmingDelete(e.id);
+                          }
+                        }} 
+                        style={{ 
+                          border: confirmingDelete === e.id ? "1px solid var(--blood)" : "1px solid var(--ring)", 
+                          borderRadius: 8, 
+                          padding: "4px 8px", 
+                          background: confirmingDelete === e.id ? "#ffe6e6" : "#fff", 
+                          cursor: "pointer",
+                          color: confirmingDelete === e.id ? "var(--blood)" : "inherit"
+                        }}
+                      >
+                        {confirmingDelete === e.id ? "Sure?" : "Delete"}
+                      </button>
                     </div>
                   </div>
                 );
@@ -557,21 +624,39 @@ export default function Page() {
     );
   }
 
-  function ConfirmDialog({ message, confirmText = "Delete", cancelText = "Cancel", onConfirm, onCancel }: {
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-  }) {
-  return (
-    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 2000 }}>
-        <div className="modal stack" style={{ gap: 12 }}>
-          <div>{message}</div>
-          <div className="actions">
-            <button onClick={onCancel}>{cancelText}</button>
-            <button className="primary" onClick={onConfirm}>{confirmText}</button>
+  function ConfirmationCard() {
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 4000 }}>
+        <div className="stack" style={{ 
+          gap: 12, 
+          textAlign: "center", 
+          background: "var(--card)",
+          border: "1px solid var(--ring)",
+          borderRadius: "12px",
+          padding: "20px",
+          width: "200px",
+          height: "200px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          margin: "auto"
+        }}>
+          <div style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            background: "var(--poop)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: "8px"
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="white"/>
+            </svg>
           </div>
+          <h3 style={{ margin: 0, color: "var(--poop)", fontSize: "16px", fontWeight: "600" }}>POOP IN THE LOO</h3>
         </div>
       </div>
     );
@@ -688,7 +773,7 @@ export default function Page() {
 
       {editing ? (
         <PoopForm
-          initial={{ whenIso: editing.timestampIso, bristolType: editing.bristolType, hadBlood: editing.hadBlood }}
+          initial={{ whenIso: editing.timestampIso, bristolType: editing.bristolType, hadBlood: editing.hadBlood, loadSize: editing.loadSize ?? "normal" }}
           onCancel={() => setEditing(null)}
           onSave={(d) => {
             updateEntry(editing.id, d);
@@ -702,7 +787,7 @@ export default function Page() {
           date={dayModal}
           entries={entries}
           onClose={() => setDayModal(null)}
-          onRequestDelete={(e) => setPendingDelete(e)}
+          onRequestDelete={(e) => deleteEntry(e.id)}
           onRequestEdit={(e) => setEditing(e)}
           onAddForDay={(d) => {
             const iso = new Date(d.getFullYear(), d.getMonth(), d.getDate(), new Date().getHours(), new Date().getMinutes()).toISOString();
@@ -712,13 +797,10 @@ export default function Page() {
         />
       ) : null}
 
-      {pendingDelete ? (
-        <ConfirmDialog
-          message="Delete this entry? This cannot be undone."
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={() => { deleteEntry(pendingDelete.id); setPendingDelete(null); }}
-        />
+      {showConfirmation ? (
+        <ConfirmationCard />
       ) : null}
+
     </main>
   );
 }
