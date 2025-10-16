@@ -247,7 +247,7 @@ function PoopForm({
   const minutes = Array.from({ length: 60 }, (_, i) => i).filter((m) => m % 5 === 0);
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal>
+    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 1100 }}>
       <div className="modal stack" style={{ gap: 12 }}>
         <h3 style={{ margin: 0 }}>Log a poop</h3>
         {/* Date & Time removed per request; entries will use the provided timestamp */}
@@ -364,6 +364,7 @@ export default function Page() {
   const [pendingDelete, setPendingDelete] = useState<PoopEntry | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState<string>("");
+  const [prefillWhenIso, setPrefillWhenIso] = useState<string | null>(null);
 
   useEffect(() => {
     setEntries(readEntries());
@@ -454,12 +455,13 @@ export default function Page() {
     return diff; // 0=today, 1=yesterday
   }, [entries]);
 
-  function DayEntriesModal({ date, entries, onClose, onRequestDelete, onRequestEdit }: {
+  function DayEntriesModal({ date, entries, onClose, onRequestDelete, onRequestEdit, onAddForDay }: {
     date: Date;
     entries: PoopEntry[];
     onClose: () => void;
     onRequestDelete: (e: PoopEntry) => void;
     onRequestEdit: (e: PoopEntry) => void;
+    onAddForDay: (d: Date) => void;
   }) {
     const key = toKey(date);
     const list = useMemo(() => {
@@ -473,12 +475,15 @@ export default function Page() {
 
     const title = date.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-    return (
-      <div className="modal-backdrop" role="dialog" aria-modal>
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 1500 }}>
         <div className="modal stack" style={{ gap: 12 }}>
-          <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
-            <button onClick={onClose}>Close</button>
+            <div className="row" style={{ gap: 8 }}>
+              <button onClick={() => onAddForDay(date)} style={{ border: "1px solid var(--ring)", borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>Add to this day</button>
+              <button onClick={onClose}>Close</button>
+            </div>
           </div>
           {list.length === 0 ? (
             <div className="muted">No entries for this day.</div>
@@ -517,8 +522,8 @@ export default function Page() {
     onConfirm: () => void;
     onCancel: () => void;
   }) {
-    return (
-      <div className="modal-backdrop" role="dialog" aria-modal>
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal style={{ zIndex: 2000 }}>
         <div className="modal stack" style={{ gap: 12 }}>
           <div>{message}</div>
           <div className="actions">
@@ -629,11 +634,12 @@ export default function Page() {
       )}
       {showForm ? (
         <PoopForm
-          initial={{ whenIso: nowIso, bristolType: 4, hadBlood: false }}
+          initial={{ whenIso: prefillWhenIso ?? nowIso, bristolType: 4, hadBlood: false, loadSize: "normal" }}
           onCancel={() => setShowForm(false)}
           onSave={(d) => {
             addEntry(d);
             setShowForm(false);
+            setPrefillWhenIso(null);
           }}
         />
       ) : null}
@@ -656,6 +662,11 @@ export default function Page() {
           onClose={() => setDayModal(null)}
           onRequestDelete={(e) => setPendingDelete(e)}
           onRequestEdit={(e) => setEditing(e)}
+          onAddForDay={(d) => {
+            const iso = new Date(d.getFullYear(), d.getMonth(), d.getDate(), new Date().getHours(), new Date().getMinutes()).toISOString();
+            setPrefillWhenIso(iso);
+            setShowForm(true);
+          }}
         />
       ) : null}
 
