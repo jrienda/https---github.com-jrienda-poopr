@@ -28,5 +28,25 @@ Open `http://localhost:3000`.
   - Blood presence toggle
 - Data persists locally via `localStorage` (no backend)
 
+## OpenAI integration (optional)
+
+Create a `.env.local` file in the project root with:
+
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+Then you can call the Edge route `POST /api/openai` with a JSON body:
+
+```
+{
+  "messages": [
+    { "role": "user", "content": "Summarize my poop trends" }
+  ]
+}
+```
+
+This proxies to OpenAI Chat Completions using the `gpt-4o-mini` model.
+
 ## Notes
 - Requires Node 18.17+.
